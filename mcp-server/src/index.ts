@@ -350,7 +350,7 @@ if (boundPort !== PORT) {
   );
 }
 app.log.info(
-  `Listening on http://${host}:${boundPort}  MCP: POST|GET|DELETE /mcp  OAuth bridge: /.well-known/oauth-authorization-server /oauth/* (proxies to OAUTH_ISSUER_URL)`
+  `Listening on http://${host}:${boundPort}  MCP: POST|GET|DELETE /mcp  OAuth: /.well-known/oauth-authorization-server /oauth/* (issuer = MCP_PUBLIC_URL)`
 );
 
 if (process.env.START_REDIS_WORKER_IN_PROCESS === 'true') {

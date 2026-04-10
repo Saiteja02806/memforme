@@ -1,12 +1,20 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { mcpPublicBaseUrl } from '../auth/oauthResource.js';
 
-// OAuth discovery endpoint
+/** OAuth authorization-server metadata (RFC 8414-style); issuer = MCP public origin. */
 export async function oauthDiscoveryHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const baseUrl = process.env.MCP_PUBLIC_URL || 'https://mcp-server-production-ddee.up.railway.app';
-  
+  const baseUrl = mcpPublicBaseUrl();
+  if (!baseUrl) {
+    return reply.code(503).send({
+      error: 'oauth_metadata_unconfigured',
+      error_description:
+        'Set MCP_PUBLIC_URL (or use RAILWAY_PUBLIC_DOMAIN) for OAuth discovery.',
+    });
+  }
+
   return reply.send({
     issuer: baseUrl,
     authorization_endpoint: `${baseUrl}/oauth/authorize`,

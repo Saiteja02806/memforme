@@ -168,12 +168,21 @@ This is the **foundational** step: an MCP server that speaks the protocol your t
 
 Use this section as a **running checklist**. Update it when milestones land (see **§11** and [`.cursor/rules/project-overview-maintenance.mdc`](./.cursor/rules/project-overview-maintenance.mdc)).
 
-### Supabase project **memoryforme** (last checked: 2026-04-08)
+### Supabase ↔ Cursor plugin + local CLI (last checked: 2026-04-10)
 
 | Check | Result |
 |--------|--------|
-| **Postgres tables** | **Applied** — `001_initial_schema` + **`002_mcp_tool_audit`** + apply **`003_storage_rls_user_memory`** in SQL Editor for dashboard Storage RLS. |
-| **Row counts (live)** | **`mcp_tokens` = 0**, **`memory_entries` = 0**, **`memory_versions` = 0** — no auth token row and no memories until you seed + call tools. |
+| **Canonical Memory project (this repo + Railway)** | **Ref** `veniblkwjhsovicgkkhf` — Supabase dashboard name **`memoryforme`** (your product name may show as **MemoryforMe**). **Do not** run migrations or SQL against **Todaywise** (`gswnffijfmhinavyxitz`). |
+| **`npx supabase projects list` + link** | **LINKED (●)** to **`veniblkwjhsovicgkkhf` / `memoryforme`** — matches `mcp-server/.env.example` and Railway `SUPABASE_URL`. Other org projects (e.g. **velocity**) are visible but not linked. |
+| **Cursor Supabase MCP (`list_projects`)** | May still show **only Todaywise** if the plugin is signed into a **different** Supabase account — **re-authenticate the plugin** with the **MemoryforMe / memoryforme** account so AI tools don’t target the wrong project. **No Todaywise changes** were made from this repo. |
+
+### Supabase project **memoryforme** (`veniblkwjhsovicgkkhf`) (last checked: 2026-04-10)
+
+| Check | Result |
+|--------|--------|
+| **Postgres tables (live, read-only `inspect`)** | **Present:** `mcp_tokens`, `memory_entries`, `memory_versions`, `sessions`, `conflicts`, `mcp_tool_audit`. **`oauth_clients` / `oauth_authorization_codes` / `oauth_access_tokens` are not present** — OAuth SQL migrations in [`supabase/migrations/`](./supabase/migrations/) have **not** been applied to this database yet (or equivalent tables were never created). |
+| **Row counts (live, estimated)** | **`mcp_tokens` ≈ 4**, **`memory_entries` ≈ 3**, **`sessions` ≈ 1**, **`mcp_tool_audit` ≈ 19** — environment is in use; counts change with traffic. |
+| **Postgres tables (repo intent)** | **Applied** — `001_initial_schema` + **`002_mcp_tool_audit`** + apply **`003_storage_rls_user_memory`** in SQL Editor for dashboard Storage RLS. |
 | **Storage bucket** | **`user-memory`** exists (private). Add **`storage.objects` RLS** for end-user dashboard access when you build the frontend; MCP uses **service role** uploads today. |
 | **MCP token row** | You must **insert** at least one `mcp_tokens` row (or use dev **`MCP_BEARER_TOKEN` + `SUPABASE_FALLBACK_USER_ID`**) — see [`supabase/seed_mcp_token_example.sql`](./supabase/seed_mcp_token_example.sql). |
 | **Runtime E2E in CI/agent** | **Not run here** — server **requires** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MEMORY_ENCRYPTION_KEY` (and valid Bearer). Without them, process **exits on startup** (verified). |
@@ -193,6 +202,8 @@ Use this section as a **running checklist**. Update it when milestones land (see
 | **Audit** | **`mcp_tool_audit`** (migration `002`) — best-effort insert per tool call |
 | **`markdownSync.ts`** | Per-type `{type}.md` under **`{userId}/`** in **`user-memory`** |
 | **Redis / worker** | Optional **`REDIS_URL`** + **`npm run worker`** or **`START_REDIS_WORKER_IN_PROCESS`** — see [`docs/REDIS_AND_WORKER.md`](./docs/REDIS_AND_WORKER.md) |
+| **OAuth (direct on MCP host)** | `registerOAuthRoutes` in [`mcp-server/src/index.ts`](./mcp-server/src/index.ts). Discovery uses **`mcpPublicBaseUrl()`** / **`MCP_PUBLIC_URL`** (see [`mcp-server/src/oauth/discovery.ts`](./mcp-server/src/oauth/discovery.ts)); if unset, returns **503** `oauth_metadata_unconfigured`. The old **OAuth issuer bridge** file was **removed** from the repo. |
+| **OAuth SQL in repo** | Multiple migration files define **`oauth_*`** tables differently (`004_oauth_mcp.sql` vs `005_oauth_clients.sql` / `006_oauth_access_tokens.sql` + duplicate **`004_*.sql`** names). **Align live DB columns** with [`mcp-server/src/oauth/token.ts`](./mcp-server/src/oauth/token.ts) / [`authorize.ts`](./mcp-server/src/oauth/authorize.ts) / [`auth.ts`](./mcp-server/src/oauth/auth.ts) before relying on OAuth in prod. |
 | Env required | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MEMORY_ENCRYPTION_KEY`, plus token path above |
 
 ### Phase 4 — Frontend ([`web/`](./web/))

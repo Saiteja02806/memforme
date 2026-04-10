@@ -1,14 +1,15 @@
 # OAuth for MCP (ChatGPT & Claude)
 
-This project implements **OAuth 2.1-style authorization** for MCP: the **MCP HTTP server** advertises a **protected resource** and accepts **Bearer** tokens issued by your **Next.js app** (authorization server). **Manual `mcp_tokens` hashes** remain supported for backward compatibility and tooling.
+This project implements **OAuth 2.1-style authorization** for MCP: the **MCP HTTP server** is both the **protected resource** and the **authorization server** on the **same public origin** (`MCP_PUBLIC_URL`). **Manual `mcp_tokens` hashes** remain supported for backward compatibility and tooling.
+
+The **Next.js app** (`web/`) can still expose its own `/.well-known/oauth-authorization-server` using **`OAUTH_ISSUER_URL`** for dashboard / connect flows — that is separate from the MCP server, which does **not** proxy OAuth to Next.js.
 
 ## Architecture
 
 | Role | Host | Endpoints |
 |------|------|-----------|
-| **Resource server (MCP)** | Railway `mcp-server` | `GET /.well-known/oauth-protected-resource`, `POST/GET/DELETE /mcp` |
-| **Authorization server (canonical)** | Vercel / your Next deploy | `GET /.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/userinfo` |
-| **Same-origin OAuth bridge (MCP)** | Same as MCP | When `OAUTH_ISSUER_URL` is set, the MCP host also serves those paths: metadata and `/oauth/token` / `/oauth/register` / `/oauth/userinfo` **proxy** to Next.js; `/oauth/authorize` **redirects** to Next (browser login + cookies). Use this when a connector only probes the MCP origin (e.g. ChatGPT). |
+| **Resource + authorization server (MCP)** | Railway `mcp-server` | `GET /.well-known/oauth-protected-resource`, `GET /.well-known/oauth-authorization-server`, `/oauth/*`, `POST/GET/DELETE /mcp` |
+| **Optional: issuer metadata for the web app** | Vercel / your Next deploy | `GET /.well-known/oauth-authorization-server` (uses `OAUTH_ISSUER_URL` as base) — for UI and docs links, not required for MCP-only connectors that probe the MCP origin |
 
 ## Supabase
 
@@ -32,8 +33,7 @@ This project implements **OAuth 2.1-style authorization** for MCP: the **MCP HTT
 
 | Variable | Purpose |
 |----------|---------|
-| `MCP_PUBLIC_URL` | Public **HTTPS** origin of the MCP service (no `/mcp`). If unset, **`https://$RAILWAY_PUBLIC_DOMAIN`** is used on Railway |
-| `OAUTH_ISSUER_URL` | Same value as on Next — used in protected-resource metadata and `WWW-Authenticate` |
+| `MCP_PUBLIC_URL` | Public **HTTPS** origin of the MCP service (no `/mcp`). If unset, **`https://$RAILWAY_PUBLIC_DOMAIN`** is used on Railway — **required** for OAuth discovery metadata (or discovery returns 503) |
 | Existing `SUPABASE_*`, `MCP_BEARER_TOKEN`, etc. | Unchanged |
 
 ## Dynamic client registration
@@ -64,8 +64,8 @@ Default granted scopes include **`mcp`**, which the MCP server expands to **`rea
 
 ## Deploy
 
-- **Web**: deploy with the new env vars; ensure **`OAUTH_ISSUER_URL`** matches the live URL hosts use for discovery.
-- **MCP (Railway)**: set **`MCP_PUBLIC_URL`** and **`OAUTH_ISSUER_URL`**, then e.g. from `mcp-server/`: `railway up` (or your CI).
+- **Web**: set **`OAUTH_ISSUER_URL`** to the live Next origin if you use the web app’s OAuth metadata and connect UI.
+- **MCP (Railway)**: set **`MCP_PUBLIC_URL`** to the public MCP origin (or rely on **`RAILWAY_PUBLIC_DOMAIN`**), then e.g. from `mcp-server/`: `railway up` (or your CI).
 
 ## Platform notes
 

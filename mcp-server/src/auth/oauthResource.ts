@@ -22,11 +22,6 @@ export function oauthProtectedResourceMetadataUrl(): string | null {
   return `${base}/.well-known/oauth-protected-resource`;
 }
 
-export function oauthAuthorizationServerIssuer(): string | null {
-  const issuer = process.env.OAUTH_ISSUER_URL?.trim().replace(/\/$/, '');
-  return issuer || null;
-}
-
 export function wwwAuthenticateUnauthorized(): string | undefined {
   const md = oauthProtectedResourceMetadataUrl();
   if (!md) {

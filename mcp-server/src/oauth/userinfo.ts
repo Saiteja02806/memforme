@@ -1,4 +1,5 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { mcpPublicBaseUrl } from '../auth/oauthResource.js';
 import { getSupabaseServiceClient } from '../supabase/client.js';
 
 const supabase = getSupabaseServiceClient();
@@ -62,10 +63,11 @@ export async function oauthUserinfoHandler(
     .update({ last_used_at: new Date().toISOString() })
     .eq('access_token', token);
   
+  const iss = mcpPublicBaseUrl();
   return reply.send({
     sub: user.id,
     email: user.email,
     scopes: accessToken.scope,
-    iss: 'https://mcp-server-production-ddee.up.railway.app',
+    ...(iss ? { iss } : {}),
   });
 }
