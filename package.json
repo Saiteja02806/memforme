@@ -4,7 +4,7 @@
   "description": "Cross-model memory — run MCP scripts from repo root",
   "scripts": {
     "dev": "npm run dev --prefix mcp-server",
-    "build": "npm run build --prefix mcp-server",
+    "build": "npm ci --prefix mcp-server --include=dev && npm run build --prefix mcp-server",
     "start": "npm run start --prefix mcp-server",
     "smoke": "npm run smoke --prefix mcp-server",
     "inspector-flow": "npm run inspector-flow --prefix mcp-server",
