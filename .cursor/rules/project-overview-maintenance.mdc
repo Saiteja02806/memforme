@@ -1,0 +1,29 @@
+---
+description: Keep PROJECT_OVERVIEW.md current when architecture, Supabase, or MCP status changes
+alwaysApply: true
+---
+
+# Maintain `PROJECT_OVERVIEW.md` as living context
+
+This repo uses [`PROJECT_OVERVIEW.md`](../../PROJECT_OVERVIEW.md) as the **canonical narrative** for goals, constraints, and status. When you learn something important from the user or from the codebase, **update that file** (not only the chat).
+
+## When to edit
+
+- **Supabase:** migrations applied, buckets created, RLS changes, or verified counts (tables/buckets) after checking the project.
+- **MCP / `mcp-server`:** new tools, auth model changes, encryption wired, or stubs replaced with real persistence.
+- **Roadmap:** reorder or check off items in **§9 Advanced layer** when scope shifts.
+- **Decisions:** gaps resolved, session policy chosen, retrieval policy fixed — summarize briefly under the relevant section or §8.
+
+## How to edit
+
+- Prefer **short tables** and **dated** “last checked” lines for external systems (Supabase).
+- Keep **§10 Document map** in `PROJECT_OVERVIEW.md` accurate when adding new files.
+- Do **not** duplicate the whole PDF; point to it for deep spec.
+
+## If unsure
+
+Ask the user one concrete question rather than guessing project-specific facts (e.g. bucket name, soft vs hard delete).
+
+## Communication
+
+When summarizing changes for the user, follow [`.cursor/rules/simple-clear-communication.mdc`](./simple-clear-communication.mdc): **simple words, full facts**.

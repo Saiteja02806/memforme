@@ -1,0 +1,39 @@
+{
+  "name": "cross-model-memory-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "railway:deploy": "railway up -d",
+    "railway:status": "railway service status",
+    "start": "node dist/index.js",
+    "smoke": "node scripts/smoke-test.mjs",
+    "inspector-flow": "node scripts/mcp-inspector-flow.mjs",
+    "verify": "npm run build && node scripts/smoke-test.mjs",
+    "hash-token": "node scripts/print-token-hash.mjs",
+    "worker": "node dist/worker-entry.js",
+    "verify:supabase": "node scripts/verify-supabase-memory.mjs",
+    "reencrypt-memories": "tsx scripts/reencrypt-memory-entries.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/rate-limit": "^10.3.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@supabase/supabase-js": "^2.49.1",
+    "bullmq": "^5.73.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

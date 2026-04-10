@@ -1,0 +1,8 @@
+node_modules/
+web/node_modules/
+web/.next/
+web/out/
+dist/
+.env
+.env.local
+*.log

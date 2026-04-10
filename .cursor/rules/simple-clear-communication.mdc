@@ -1,0 +1,33 @@
+---
+description: Explain work and reports in plain language without dropping facts
+alwaysApply: true
+---
+
+# Simple, complete communication
+
+After **implementing**, **changing code**, or **reporting** (status, tables, diffs, plans), explain so the user can follow **without heavy jargon**.
+
+## Rules
+
+1. **Plain words first** — Short sentences, everyday vocabulary. Define acronyms once (e.g. “MCP (the protocol AI tools use to call your server)”).
+2. **Structure** — Use headings and bullets so nothing hides in a wall of text.
+3. **Do not strip facts to sound simple** — If a detail matters (file path, env var, table name, “not done yet”, risk), **keep it**. Simplicity means **how** you say it, not **deleting** it.
+4. **Layer when helpful** — One-line summary at the top, then **“Details”** or **“Full list”** with the same information in structured form so nothing is lost.
+5. **Numbers and names** — Keep exact names (tools, buckets, URLs) in backticks or bullets; paraphrase the *idea* around them simply.
+
+## Explaining “what we’re going to build” or “Path A vs Path B” (≈ 10th-grade level)
+
+When you **propose or implement** something with choices (auth paths, deploy options, two ways to configure the same thing):
+
+1. **Start with a picture in normal words** — One short paragraph: *what problem* it solves, *who checks what* (e.g. “the app checks your password before opening the door”). No file names yet if possible.
+2. **Then name the paths simply** — e.g. “**Path A** = quick way for homework on your laptop. **Path B** = proper way for the real website.” Say **when to use** each in one line.
+3. **Then “Details”** — Exact env vars, SQL table names, commands in `backticks`, in order. Same facts, tighter wording.
+4. **Avoid** dumping acronyms before the plain sentence; **do** define them once after the picture (e.g. “Bearer token = secret word you send so the server knows it’s you”).
+
+This is the same rule as above: **simple layer first**, **technical layer second**, nothing important removed.
+
+## Check before sending
+
+- Would someone non-specialist understand the **outcome** in 30 seconds?
+- If they need to **act** (run SQL, set env), are steps still spelled out?
+- Did any constraint, caveat, or “not implemented” item disappear? If yes, put it back.

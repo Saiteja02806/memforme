@@ -1,0 +1,23 @@
+---
+description: 
+alwaysApply: true
+---
+
+# Agent autonomy (memforme)
+
+## Default behavior
+
+- **Run commands yourself** when the environment allows it (`npm run dev`, `npm run build`, `npm run smoke`, installs, migrations you can apply). Do **not** default to “please run X in your terminal” for steps you can execute; reserve that for actions **only the user** can do (pasting a key into Supabase dashboard, approving OAuth, production-only clicks).
+- **Run commands** from the **correct path** (this repo’s MCP app lives in **`mcp-server/`**; root **`package.json`** delegates `dev` / `smoke` / `build` / `start`).
+- **Implement** small, safe fixes (wrong cwd, missing `package.json` at root, `.env` path, docs links) **without** asking the user to do it manually first.
+- **Only ask** when you need a **secret**, an **irreversible** choice, or **external** access you cannot perform.
+
+**Reality check:** Cursor rules are **instructions to the model**, not a hard guarantee every reply will comply. Your **user rules** in settings plus this file both steer behavior; if something slips, point at this rule and ask for a redo.
+
+## Project specifics
+
+- **`npm run dev`**, **`npm run smoke`**, **`npm run build`** may be run from **`memforme`** (root) or **`memforme/mcp-server`** — both should work after root `package.json` + `loadMcpEnv` / smoke script path fixes.
+
+## Communication
+
+Still explain **what you did** and **what failed** in simple language ([`simple-clear-communication.mdc`](./simple-clear-communication.mdc)); autonomy does not mean silence.

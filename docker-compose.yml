@@ -1,0 +1,16 @@
+# Optional Redis for BullMQ markdown resync queue (Milestone D).
+# Usage: docker compose up -d redis
+# Then set REDIS_URL=redis://127.0.0.1:6379 on mcp-server and run the API with
+# START_REDIS_WORKER_IN_PROCESS=true, or run `npm run worker` in mcp-server separately.
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - memforme_redis:/data
+
+volumes:
+  memforme_redis:
