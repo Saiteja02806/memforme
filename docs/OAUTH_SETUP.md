@@ -7,7 +7,8 @@ This project implements **OAuth 2.1-style authorization** for MCP: the **MCP HTT
 | Role | Host | Endpoints |
 |------|------|-----------|
 | **Resource server (MCP)** | Railway `mcp-server` | `GET /.well-known/oauth-protected-resource`, `POST/GET/DELETE /mcp` |
-| **Authorization server** | Vercel / your Next deploy | `GET /.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/userinfo` |
+| **Authorization server (canonical)** | Vercel / your Next deploy | `GET /.well-known/oauth-authorization-server`, `/oauth/register`, `/oauth/authorize`, `/oauth/token`, `/oauth/userinfo` |
+| **Same-origin OAuth bridge (MCP)** | Same as MCP | When `OAUTH_ISSUER_URL` is set, the MCP host also serves those paths: metadata and `/oauth/token` / `/oauth/register` / `/oauth/userinfo` **proxy** to Next.js; `/oauth/authorize` **redirects** to Next (browser login + cookies). Use this when a connector only probes the MCP origin (e.g. ChatGPT). |
 
 ## Supabase
 

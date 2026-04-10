@@ -4,6 +4,7 @@ loadMcpEnv();
 import { randomUUID } from 'node:crypto';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import formbody from '@fastify/formbody';
 import rateLimit from '@fastify/rate-limit';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
@@ -18,6 +19,7 @@ import { resolveMcpAuth, type McpAuthResolveOptions } from './auth/resolveMcpUse
 import { createCorsAllowlist, isRelaxLocalCorsEnabled } from './corsConfig.js';
 import { createMemoryMcpServer } from './createMcpServer.js';
 import { startMarkdownResyncWorker } from './queue/markdownWorker.js';
+import { registerOAuthIssuerBridge } from './oauthIssuerBridge.js';
 import { getSupabaseServiceClient } from './supabase/client.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -72,6 +74,9 @@ await app.register(cors, {
   exposedHeaders: ['mcp-session-id', 'Mcp-Session-Id'],
   credentials: true,
 });
+
+await app.register(formbody);
+await registerOAuthIssuerBridge(app);
 
 app.get('/health', async () => ({
   ok: true,
@@ -347,7 +352,7 @@ if (boundPort !== PORT) {
   );
 }
 app.log.info(
-  `Listening on http://${host}:${boundPort}  MCP: POST|GET|DELETE /mcp`
+  `Listening on http://${host}:${boundPort}  MCP: POST|GET|DELETE /mcp  OAuth bridge: /.well-known/oauth-authorization-server /oauth/* (proxies to OAUTH_ISSUER_URL)`
 );
 
 if (process.env.START_REDIS_WORKER_IN_PROCESS === 'true') {
