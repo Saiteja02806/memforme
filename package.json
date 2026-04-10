@@ -13,7 +13,7 @@
     "web:dev": "npm run dev --prefix web",
     "web:clean": "npm run clean --prefix web",
     "web:build": "npm run build --prefix web",
-    "railway:deploy": "npm run railway:deploy --prefix mcp-server",
+    "railway:deploy": "railway up -d",
     "railway:status": "npm run railway:status --prefix mcp-server",
     "worker": "npm run worker --prefix mcp-server",
     "verify:supabase": "npm run verify:supabase --prefix mcp-server",
