@@ -19,7 +19,7 @@ import { resolveMcpAuth, type McpAuthResolveOptions } from './auth/resolveMcpUse
 import { createCorsAllowlist, isRelaxLocalCorsEnabled } from './corsConfig.js';
 import { createMemoryMcpServer } from './createMcpServer.js';
 import { startMarkdownResyncWorker } from './queue/markdownWorker.js';
-import { registerOAuthIssuerBridge } from './oauthIssuerBridge.js';
+import { registerOAuthRoutes } from './oauth/index.js';
 import { getSupabaseServiceClient } from './supabase/client.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -76,7 +76,7 @@ await app.register(cors, {
 });
 
 await app.register(formbody);
-await registerOAuthIssuerBridge(app);
+await registerOAuthRoutes(app);
 
 app.get('/health', async () => ({
   ok: true,

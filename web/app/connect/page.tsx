@@ -6,6 +6,10 @@ function mcpEndpoint(): string {
   return base ? `${base}/mcp` : '';
 }
 
+function oauthIssuerBase(): string {
+  return process.env.OAUTH_ISSUER_URL?.trim().replace(/\/+$/, '') ?? '';
+}
+
 export default async function ConnectPage() {
   const mcpUrl = mcpEndpoint();
   const supabase = await createServerSupabase();
@@ -23,8 +27,9 @@ export default async function ConnectPage() {
     <main className="page connect-guide max-w-3xl mx-auto">
       <h1 className="text-3xl font-semibold tracking-tight mb-2">Connect ChatGPT &amp; MCP</h1>
       <p className="lede muted mb-4">
-        One checklist: deploy the MCP server, create a Bearer token tied to your Memforme account, then
-        register the connector in ChatGPT (or use the API / other clients).
+        Deploy the MCP server, then connect ChatGPT or Claude using <strong>OAuth</strong> (recommended for
+        hosted connectors) or a <strong>dashboard Bearer token</strong> (manual / MCP Inspector). See{' '}
+        <code className="inline">docs/OAUTH_SETUP.md</code> for OAuth env vars and registration.
       </p>
       {mcpUrl && mcpIsLocalHttp ? (
         <div className="callout callout-warning mb-8" role="status">
@@ -93,8 +98,44 @@ export default async function ConnectPage() {
         )}
       </section>
 
+      {oauthIssuerBase() ? (
+        <section className="mb-10 space-y-3">
+          <h2 className="section-title text-xl">3. OAuth (authorization server)</h2>
+          <p className="muted">
+            This app is configured as the OAuth issuer (<code className="inline">OAUTH_ISSUER_URL</code>).
+            ChatGPT / Claude discover metadata here, register a client, and send users through{' '}
+            <code className="inline">/oauth/authorize</code> (Memforme sign-in). The MCP server accepts the
+            resulting access token on <code className="inline">/mcp</code> alongside legacy{' '}
+            <code className="inline">mcp_tokens</code> Bearer secrets.
+          </p>
+          <div className="panel border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-2">
+            <p className="muted text-sm mt-0 mb-0">Discovery (authorization server metadata):</p>
+            <pre className="mono wrap text-sm mb-0">
+              {`${oauthIssuerBase()}/.well-known/oauth-authorization-server`}
+            </pre>
+            <p className="muted text-sm mb-0">Dynamic registration:</p>
+            <pre className="mono wrap text-sm mb-0">POST {`${oauthIssuerBase()}/oauth/register`}</pre>
+            <p className="muted text-sm mt-2 mb-0">
+              Requires <code className="inline">SUPABASE_SERVICE_ROLE_KEY</code> on this Next.js deployment and
+              migration <code className="inline">004_oauth_mcp.sql</code> applied in Supabase.
+            </p>
+          </div>
+        </section>
+      ) : (
+        <section className="mb-10 space-y-3">
+          <h2 className="section-title text-xl">3. OAuth (optional)</h2>
+          <p className="muted">
+            To use OAuth with ChatGPT or Claude, deploy this web app with{' '}
+            <code className="inline">OAUTH_ISSUER_URL</code>, <code className="inline">SUPABASE_SERVICE_ROLE_KEY</code>
+            , and apply <code className="inline">004_oauth_mcp.sql</code>. Set{' '}
+            <code className="inline">OAUTH_ISSUER_URL</code> and <code className="inline">MCP_PUBLIC_URL</code> on the
+            MCP server. Full steps: <code className="inline">docs/OAUTH_SETUP.md</code>.
+          </p>
+        </section>
+      )}
+
       <section className="mb-10 space-y-3">
-        <h2 className="section-title text-xl">3. Bearer token</h2>
+        <h2 className="section-title text-xl">4. Bearer token (manual)</h2>
         <ol className="steps list-decimal pl-5 space-y-2 muted">
           <li>
             Open <Link href="/dashboard/connect">Dashboard → Connect AI</Link> (requires sign-in).
@@ -111,16 +152,28 @@ export default async function ConnectPage() {
       </section>
 
       <section className="mb-10 space-y-3">
-        <h2 className="section-title text-xl">4. ChatGPT (Apps &amp; Connectors)</h2>
+        <h2 className="section-title text-xl">5. ChatGPT / Claude (Apps &amp; Connectors)</h2>
         <ol className="steps list-decimal pl-5 space-y-2 muted">
           <li>Enable developer mode if your workspace allows it (Settings → Apps &amp; Connectors → Advanced).</li>
           <li>Create an app / connector and paste the MCP URL above.</li>
-          <li>When prompted for auth, use the Bearer secret from the dashboard (Path B).</li>
+          <li>
+            {oauthIssuerBase() ? (
+              <>
+                When prompted for auth, use <strong>OAuth</strong> if the host supports it (discovery URL in
+                section 3), or paste the <strong>Bearer</strong> secret from the dashboard (section 4).
+              </>
+            ) : (
+              <>
+                When prompted for auth, use the Bearer secret from the dashboard (section 4), or configure OAuth
+                (section 3).
+              </>
+            )}
+          </li>
           <li>Refresh the connector after you change tools or descriptions on the server.</li>
         </ol>
         <p className="muted small">
-          CORS and troubleshooting: <code className="inline">docs/MCP_CLIENT_CONNECTION.md</code>. OpenAI may
-          recommend full OAuth for some flows — see <code className="inline">docs/OAUTH_PHASE2.md</code>.
+          CORS: <code className="inline">docs/MCP_CLIENT_CONNECTION.md</code>. OAuth env and registration:{' '}
+          <code className="inline">docs/OAUTH_SETUP.md</code>.
         </p>
       </section>
 

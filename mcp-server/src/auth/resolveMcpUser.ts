@@ -1,10 +1,12 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { isEnvBearerFallbackDisabled } from './envFlags.js';
 import {
   normalizeEnvBearerSecret,
   normalizeFallbackUserId,
 } from './envNormalize.js';
+import { authenticateOAuthToken } from '../oauth/auth.js';
 
 export type McpAuthContext = {
   userId: string;
@@ -35,8 +37,21 @@ export type McpAuthResolveOptions = {
 export async function resolveMcpAuth(
   supabase: SupabaseClient,
   authHeader: string | undefined,
+  request?: FastifyRequest,
+  reply?: FastifyReply,
   options?: McpAuthResolveOptions
 ): Promise<McpAuthContext | null> {
+  // Try OAuth token first, then Bearer token
+  const oauthAuth = request && reply ? await authenticateOAuthToken(request, reply) : null;
+  if (oauthAuth) {
+    return {
+      userId: oauthAuth.userId,
+      scopes: oauthAuth.scopes,
+      tokenId: 'oauth-token',
+    };
+  }
+
+  // Fallback to Bearer token authentication
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
   }
@@ -89,6 +104,16 @@ export async function resolveMcpAuth(
       userId: oat.user_id,
       scopes: expandOAuthScopes(Array.isArray(oat.scopes) ? oat.scopes : []),
       tokenId: oat.id,
+    };
+  }
+
+  // Try OAuth token authentication
+  const oauthAuth = await authenticateOAuthToken(request as any, reply as any);
+  if (oauthAuth) {
+    return {
+      userId: oauthAuth.userId,
+      scopes: oauthAuth.scopes,
+      tokenId: 'oauth-token',
     };
   }
 

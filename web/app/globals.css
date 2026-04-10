@@ -6,10 +6,119 @@
   color: #0f172a;
   background: #f8fafc;
 }
+
 body {
   margin: 0;
   padding: 1.5rem;
   max-width: 42rem;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  
+  .dashboard-shell {
+    max-width: 100%;
+    margin: 0;
+    padding: 1rem;
+  }
+  
+  .dash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .dash-nav {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .card-list {
+    gap: 0.5rem;
+  }
+  
+  .card {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 0.5rem;
+  }
+  
+  .hero-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Enhanced animations and transitions */
+.card-elevated {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: all 0.2s ease;
+}
+
+.card-elevated:hover {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+/* Loading states */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #1d4ed8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Focus states for accessibility */
+.btn:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* Mobile-first navigation */
+@media (max-width: 640px) {
+  .dash-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e2e8f0;
+    padding: 1rem;
+    justify-content: space-around;
+    z-index: 50;
+  }
+  
+  .dash-body {
+    padding-bottom: 5rem;
+  }
 }
 a {
   color: #1d4ed8;
