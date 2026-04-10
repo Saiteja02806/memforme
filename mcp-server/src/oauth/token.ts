@@ -100,6 +100,7 @@ export async function oauthTokenHandler(
       user_id: authCode.user_id,
       scope: authCode.scope,
       expires_at: expires_at.toISOString(),
+      is_active: true,
     })
     .select();
   

@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createHash } from 'node:crypto';
 import { getSupabaseServiceClient } from '../supabase/client.js';
 

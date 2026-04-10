@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { mcpPublicBaseUrl } from '../auth/oauthResource.js';
 import { getSupabaseServiceClient } from '../supabase/client.js';
+import { scopesFromDb } from './scopeUtils.js';
 
 const supabase = getSupabaseServiceClient();
 
@@ -43,19 +44,18 @@ export async function oauthUserinfoHandler(
     });
   }
   
-  // Get user information
-  const { data: user } = await supabase
-    .from('auth.users')
-    .select('id, email, created_at')
-    .eq('id', accessToken.user_id)
-    .single();
-  
-  if (!user) {
-    return reply.code(500).send({ 
+  const { data: userData, error: userErr } = await supabase.auth.admin.getUserById(
+    accessToken.user_id
+  );
+
+  if (userErr || !userData?.user) {
+    return reply.code(500).send({
       error: 'server_error',
-      error_description: 'User not found'
+      error_description: userErr?.message || 'User not found',
     });
   }
+
+  const user = userData.user;
   
   // Update last used timestamp
   await supabase
@@ -67,7 +67,7 @@ export async function oauthUserinfoHandler(
   return reply.send({
     sub: user.id,
     email: user.email,
-    scopes: accessToken.scope,
+    scopes: scopesFromDb(accessToken.scope),
     ...(iss ? { iss } : {}),
   });
 }

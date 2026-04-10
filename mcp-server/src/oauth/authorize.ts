@@ -60,6 +60,16 @@ export async function oauthAuthorizeHandler(
       error_description: 'Invalid redirect_uri'
     });
   }
+
+  const fallbackUser = process.env.OAUTH_AUTHORIZATION_USER_ID?.trim();
+  const effectiveUserId = client.user_id ?? (fallbackUser || null);
+  if (!effectiveUserId) {
+    return reply.code(503).send({
+      error: 'server_error',
+      error_description:
+        'OAuth client has no user_id; set OAUTH_AUTHORIZATION_USER_ID to a valid auth.users UUID for dynamic-registration clients.',
+    });
+  }
   
   // Generate authorization code
   const code = generateAuthorizationCode();
@@ -73,7 +83,7 @@ export async function oauthAuthorizeHandler(
       client_id,
       redirect_uri,
       scope: scope || 'read write',
-      user_id: client.user_id,
+      user_id: effectiveUserId,
       expires_at: expiresAt.toISOString(),
     })
     .select();

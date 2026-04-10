@@ -1,8 +1,21 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createHash, randomBytes } from 'node:crypto';
 import { getSupabaseServiceClient } from '../supabase/client.js';
 
 const supabase = getSupabaseServiceClient();
+
+function userFromBearerRpc(data: unknown): { id: string } | null {
+  if (data == null) return null;
+  if (Array.isArray(data)) {
+    const row = data[0] as { id?: string } | undefined;
+    return row?.id != null ? { id: String(row.id) } : null;
+  }
+  if (typeof data === 'object' && data !== null && 'id' in data) {
+    const id = (data as { id: unknown }).id;
+    if (id != null && String(id)) return { id: String(id) };
+  }
+  return null;
+}
 
 // Generate OAuth client ID and secret
 export function generateOAuthCredentials() {
@@ -32,7 +45,8 @@ export async function createOAuthClient(
   }
   
   // Get user from token
-  const { data: user } = await supabase.rpc('get_user_by_bearer_token', { token });
+  const { data: rpcData } = await supabase.rpc('get_user_by_bearer_token', { token });
+  const user = userFromBearerRpc(rpcData);
   if (!user) {
     return reply.code(401).send({ error: 'Invalid token' });
   }
@@ -80,7 +94,8 @@ export async function listOAuthClients(
     return reply.code(401).send({ error: 'Unauthorized' });
   }
   
-  const { data: user } = await supabase.rpc('get_user_by_bearer_token', { token });
+  const { data: rpcData } = await supabase.rpc('get_user_by_bearer_token', { token });
+  const user = userFromBearerRpc(rpcData);
   if (!user) {
     return reply.code(401).send({ error: 'Invalid token' });
   }
@@ -110,12 +125,13 @@ export async function deleteOAuthClient(
     return reply.code(401).send({ error: 'Unauthorized' });
   }
   
-  const { data: user } = await supabase.rpc('get_user_by_bearer_token', { token });
+  const { data: rpcData } = await supabase.rpc('get_user_by_bearer_token', { token });
+  const user = userFromBearerRpc(rpcData);
   if (!user) {
     return reply.code(401).send({ error: 'Invalid token' });
   }
   
-  const { client_id } = request.body as any;
+  const client_id = (request.params as { client_id?: string }).client_id;
   if (!client_id) {
     return reply.code(400).send({ error: 'Client ID required' });
   }

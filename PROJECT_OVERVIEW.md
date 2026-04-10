@@ -180,7 +180,7 @@ Use this section as a **running checklist**. Update it when milestones land (see
 
 | Check | Result |
 |--------|--------|
-| **Postgres tables (live, read-only `inspect`)** | **Present:** `mcp_tokens`, `memory_entries`, `memory_versions`, `sessions`, `conflicts`, `mcp_tool_audit`. **`oauth_clients` / `oauth_authorization_codes` / `oauth_access_tokens` are not present** — OAuth SQL migrations in [`supabase/migrations/`](./supabase/migrations/) have **not** been applied to this database yet (or equivalent tables were never created). |
+| **Postgres tables (live, read-only `inspect`)** | **Present:** `mcp_tokens`, `memory_entries`, `memory_versions`, `sessions`, `conflicts`, `mcp_tool_audit`, **`oauth_clients`**, **`oauth_authorization_codes`**, **`oauth_access_tokens`**. Schema + **`get_user_by_bearer_token`** applied on **memoryforme** via migration **`20260410170624_oauth_mcp_handler_schema.sql`** (CLI: `supabase db query --linked -f …`; **not** via Cursor Supabase MCP, which may still point at another project). For clients registered with `user_id` null, set MCP env **`OAUTH_AUTHORIZATION_USER_ID`** to a real **`auth.users`** UUID for `/oauth/authorize`. |
 | **Row counts (live, estimated)** | **`mcp_tokens` ≈ 4**, **`memory_entries` ≈ 3**, **`sessions` ≈ 1**, **`mcp_tool_audit` ≈ 19** — environment is in use; counts change with traffic. |
 | **Postgres tables (repo intent)** | **Applied** — `001_initial_schema` + **`002_mcp_tool_audit`** + apply **`003_storage_rls_user_memory`** in SQL Editor for dashboard Storage RLS. |
 | **Storage bucket** | **`user-memory`** exists (private). Add **`storage.objects` RLS** for end-user dashboard access when you build the frontend; MCP uses **service role** uploads today. |
@@ -204,7 +204,7 @@ Use this section as a **running checklist**. Update it when milestones land (see
 | **Redis / worker** | Optional **`REDIS_URL`** + **`npm run worker`** or **`START_REDIS_WORKER_IN_PROCESS`** — see [`docs/REDIS_AND_WORKER.md`](./docs/REDIS_AND_WORKER.md) |
 | **OAuth (direct on MCP host)** | `registerOAuthRoutes` in [`mcp-server/src/index.ts`](./mcp-server/src/index.ts). Discovery uses **`mcpPublicBaseUrl()`** / **`MCP_PUBLIC_URL`** (see [`mcp-server/src/oauth/discovery.ts`](./mcp-server/src/oauth/discovery.ts)); if unset, returns **503** `oauth_metadata_unconfigured`. The old **OAuth issuer bridge** file was **removed** from the repo. |
 | **Railway / Railpack** | Deploy from **repository root**: `npm run railway:deploy` (runs `railway up -d` with the full monorepo). Root **`npm run build`** must run **`npm ci --prefix mcp-server --include=dev`** before `tsc` so the image has TypeScript during the build step. |
-| **OAuth SQL in repo** | Multiple migration files define **`oauth_*`** tables differently (`004_oauth_mcp.sql` vs `005_oauth_clients.sql` / `006_oauth_access_tokens.sql` + duplicate **`004_*.sql`** names). **Align live DB columns** with [`mcp-server/src/oauth/token.ts`](./mcp-server/src/oauth/token.ts) / [`authorize.ts`](./mcp-server/src/oauth/authorize.ts) / [`auth.ts`](./mcp-server/src/oauth/auth.ts) before relying on OAuth in prod. |
+| **OAuth SQL in repo** | Canonical handler-aligned DDL: **`20260410170624_oauth_mcp_handler_schema.sql`**. Older numeric migrations (`005`/`006`/`20260410170254_*`) may differ; duplicate **`004_oauth_mcp.sql`** was **removed** from the repo to avoid version **`004`** clashes. |
 | Env required | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MEMORY_ENCRYPTION_KEY`, plus token path above |
 
 ### Phase 4 — Frontend ([`web/`](./web/))

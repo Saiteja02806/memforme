@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getSupabaseServiceClient } from '../supabase/client.js';
+import { scopesFromDb } from './scopeUtils.js';
 
 const supabase = getSupabaseServiceClient();
 
@@ -46,6 +47,6 @@ export async function authenticateOAuthToken(
   
   return {
     userId: accessToken.user_id,
-    scopes: accessToken.scope,
+    scopes: scopesFromDb(accessToken.scope),
   };
 }
