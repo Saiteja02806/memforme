@@ -5,7 +5,7 @@ export async function oauthDiscoveryHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const baseUrl = 'https://mcp-server-production-ddee.up.railway.app';
+  const baseUrl = process.env.MCP_PUBLIC_URL || 'https://mcp-server-production-ddee.up.railway.app';
   
   return reply.send({
     issuer: baseUrl,

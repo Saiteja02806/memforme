@@ -12,7 +12,6 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { getMcpAuthStartupLines } from './auth/mcpAuthConfig.js';
 import {
   mcpPublicBaseUrl,
-  oauthAuthorizationServerIssuer,
   wwwAuthenticateUnauthorized,
 } from './auth/oauthResource.js';
 import { resolveMcpAuth, type McpAuthResolveOptions } from './auth/resolveMcpUser.js';
@@ -85,17 +84,16 @@ app.get('/health', async () => ({
 
 app.get('/.well-known/oauth-protected-resource', async (_request, reply) => {
   const resource = mcpPublicBaseUrl();
-  const issuer = oauthAuthorizationServerIssuer();
-  if (!resource || !issuer) {
+  if (!resource) {
     return reply.code(503).send({
       error: 'oauth_metadata_unconfigured',
       error_description:
-        'Set MCP_PUBLIC_URL (or use RAILWAY_PUBLIC_DOMAIN) and OAUTH_ISSUER_URL for OAuth discovery.',
+        'Set MCP_PUBLIC_URL (or use RAILWAY_PUBLIC_DOMAIN) for OAuth discovery.',
     });
   }
   return reply.send({
     resource,
-    authorization_servers: [issuer],
+    authorization_servers: [resource],
     scopes_supported: ['mcp', 'openid', 'profile', 'read', 'suggest_write'],
     bearer_methods_supported: ['header'],
   });
