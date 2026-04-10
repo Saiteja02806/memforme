@@ -1,14 +1,25 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { getSupabaseServiceClient } from '../supabase/client.js';
 
 const supabase = getSupabaseServiceClient();
 
-// Authenticate OAuth access token
+// Authenticate OAuth access token (overloaded for different request types)
 export async function authenticateOAuthToken(
   request: FastifyRequest,
   reply: FastifyReply
+): Promise<{ userId: string; scopes: string[] } | null>;
+
+export async function authenticateOAuthToken(
+  request: IncomingMessage,
+  reply: ServerResponse
+): Promise<{ userId: string; scopes: string[] } | null>;
+
+export async function authenticateOAuthToken(
+  request: FastifyRequest | IncomingMessage,
+  reply: FastifyReply | ServerResponse
 ): Promise<{ userId: string; scopes: string[] } | null> {
-  const authHeader = request.headers.authorization;
+  const authHeader = 'headers' in request ? request.headers.authorization : undefined;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;

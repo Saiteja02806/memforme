@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { isEnvBearerFallbackDisabled } from './envFlags.js';
 import {
   normalizeEnvBearerSecret,
@@ -37,18 +37,20 @@ export type McpAuthResolveOptions = {
 export async function resolveMcpAuth(
   supabase: SupabaseClient,
   authHeader: string | undefined,
-  request?: FastifyRequest,
-  reply?: FastifyReply,
+  request?: IncomingMessage,
+  reply?: ServerResponse,
   options?: McpAuthResolveOptions
 ): Promise<McpAuthContext | null> {
   // Try OAuth token first, then Bearer token
-  const oauthAuth = request && reply ? await authenticateOAuthToken(request, reply) : null;
-  if (oauthAuth) {
-    return {
-      userId: oauthAuth.userId,
-      scopes: oauthAuth.scopes,
-      tokenId: 'oauth-token',
-    };
+  if (request && reply) {
+    const oauthAuth = await authenticateOAuthToken(request, reply);
+    if (oauthAuth) {
+      return {
+        userId: oauthAuth.userId,
+        scopes: oauthAuth.scopes,
+        tokenId: 'oauth-token',
+      };
+    }
   }
 
   // Fallback to Bearer token authentication

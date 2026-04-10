@@ -107,7 +107,7 @@ async function mcpPostHandler(
   parsedBody: unknown,
   authHeader: string | undefined
 ): Promise<void> {
-  const authCtx = await resolveMcpAuth(supabase, authHeader, authResolveOpts);
+  const authCtx = await resolveMcpAuth(supabase, authHeader, req, res, authResolveOpts);
   if (!authCtx) {
     res.statusCode = 401;
     res.setHeader('Content-Type', 'application/json');
@@ -222,7 +222,7 @@ async function mcpSessionHandler(
   res: ServerResponse,
   authHeader: string | undefined
 ): Promise<void> {
-  const authCtx = await resolveMcpAuth(supabase, authHeader, authResolveOpts);
+  const authCtx = await resolveMcpAuth(supabase, authHeader, req, res, authResolveOpts);
   if (!authCtx) {
     res.statusCode = 401;
     const www = wwwAuthenticateUnauthorized();
