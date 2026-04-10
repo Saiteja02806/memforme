@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { createHash } from 'node:crypto';
 import { getSupabaseServiceClient } from '../supabase/client.js';
 
 const supabase = getSupabaseServiceClient();
@@ -13,8 +14,7 @@ export async function oauthRegisterHandler(
   // Generate OAuth client credentials
   const clientId = `mcp_${Math.random().toString(36).substring(2, 15)}`;
   const clientSecret = Math.random().toString(36).substring(2, 15);
-  const clientSecretHash = require('crypto')
-    .createHash('sha256')
+  const clientSecretHash = createHash('sha256')
     .update(clientSecret)
     .digest('hex');
   
