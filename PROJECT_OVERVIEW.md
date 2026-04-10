@@ -203,6 +203,7 @@ Use this section as a **running checklist**. Update it when milestones land (see
 | **`markdownSync.ts`** | Per-type `{type}.md` under **`{userId}/`** in **`user-memory`** |
 | **Redis / worker** | Optional **`REDIS_URL`** + **`npm run worker`** or **`START_REDIS_WORKER_IN_PROCESS`** — see [`docs/REDIS_AND_WORKER.md`](./docs/REDIS_AND_WORKER.md) |
 | **OAuth (direct on MCP host)** | `registerOAuthRoutes` in [`mcp-server/src/index.ts`](./mcp-server/src/index.ts). Discovery uses **`mcpPublicBaseUrl()`** / **`MCP_PUBLIC_URL`** (see [`mcp-server/src/oauth/discovery.ts`](./mcp-server/src/oauth/discovery.ts)); if unset, returns **503** `oauth_metadata_unconfigured`. The old **OAuth issuer bridge** file was **removed** from the repo. |
+| **Railway / Railpack** | Deploy from **repository root**: `npm run railway:deploy` (runs `railway up -d` with the full monorepo). Root **`npm run build`** must run **`npm ci --prefix mcp-server --include=dev`** before `tsc` so the image has TypeScript during the build step. |
 | **OAuth SQL in repo** | Multiple migration files define **`oauth_*`** tables differently (`004_oauth_mcp.sql` vs `005_oauth_clients.sql` / `006_oauth_access_tokens.sql` + duplicate **`004_*.sql`** names). **Align live DB columns** with [`mcp-server/src/oauth/token.ts`](./mcp-server/src/oauth/token.ts) / [`authorize.ts`](./mcp-server/src/oauth/authorize.ts) / [`auth.ts`](./mcp-server/src/oauth/auth.ts) before relying on OAuth in prod. |
 | Env required | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MEMORY_ENCRYPTION_KEY`, plus token path above |
 
