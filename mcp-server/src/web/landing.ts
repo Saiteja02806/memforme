@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-/** Landing page handler for the brand subdomain */
+/** Landing page handler for the brand subdomain - v2 */
 export async function landingPageHandler(
   request: FastifyRequest,
   reply: FastifyReply
