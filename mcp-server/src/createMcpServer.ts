@@ -9,6 +9,7 @@ import { touchCaptureSession } from './orchestrator/captureSession.js';
 import { recordTypeOverlapConflict } from './orchestrator/writeConflict.js';
 import { scheduleMarkdownResync } from './queue/scheduleMarkdownResync.js';
 import { resyncUserMarkdownFiles } from './storage/markdownSync.js';
+import { embedText, toVectorLiteral } from './embeddings/openaiEmbeddings.js';
 
 const memoryTypeSchema = z.enum([
   'stack',
@@ -432,6 +433,187 @@ export function createMemoryMcpServer(ctx: McpServerContext): McpServer {
           {
             type: 'text',
             text: JSON.stringify({ ok: true, id: args.entry_id, soft_deleted: true }, null, 2),
+          },
+        ],
+      };
+    }
+  );
+
+  server.registerTool(
+    'store_project_fact',
+    {
+      description:
+        'Upsert structured project metadata for Cortex memory: tech_stack (JSON) and strict_rules (string array) keyed by project_name for the connected user.',
+      inputSchema: {
+        project_name: z.string().min(1).describe('Stable project key, e.g. memforme'),
+        tech_stack: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe('Arbitrary JSON object describing stack'),
+        strict_rules: z
+          .array(z.string())
+          .optional()
+          .describe('Non-negotiable rules or constraints'),
+      },
+      annotations: {
+        title: 'Store project fact',
+        readOnlyHint: false,
+        openWorldHint: true,
+      },
+    },
+    async (args) => {
+      assertScope(scopes, 'suggest_write');
+      await withOrchestration(ctx, 'store_project_fact');
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('project_facts').upsert(
+        {
+          user_id: userId,
+          project_name: args.project_name.trim(),
+          tech_stack: args.tech_stack ?? {},
+          strict_rules: args.strict_rules ?? [],
+          updated_at: now,
+        },
+        { onConflict: 'user_id,project_name' }
+      );
+      if (error) {
+        throw new Error(`store_project_fact: ${error.message}`);
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              { ok: true, project_name: args.project_name.trim(), updated_at: now },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+  );
+
+  server.registerTool(
+    'store_experience',
+    {
+      description:
+        'Store a free-text experience or bug note with an embedding (OpenAI) in Postgres pgvector for semantic search. Requires OPENAI_API_KEY.',
+      inputSchema: {
+        project_name: z.string().min(1),
+        memory_text: z.string().min(1).describe('Experience / bug / note to embed and store'),
+      },
+      annotations: {
+        title: 'Store experience',
+        readOnlyHint: false,
+        openWorldHint: true,
+      },
+    },
+    async (args) => {
+      assertScope(scopes, 'suggest_write');
+      await withOrchestration(ctx, 'store_experience');
+      const embedding = await embedText(args.memory_text);
+      const literal = toVectorLiteral(embedding);
+      const { data, error } = await supabase
+        .from('experiences')
+        .insert({
+          user_id: userId,
+          project_name: args.project_name.trim(),
+          memory_text: args.memory_text,
+          embedding: literal,
+        })
+        .select('id')
+        .single();
+      if (error) {
+        throw new Error(`store_experience: ${error.message}`);
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                ok: true,
+                id: data?.id,
+                project_name: args.project_name.trim(),
+                embedding_dims: embedding.length,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+  );
+
+  server.registerTool(
+    'search_cortex_memory',
+    {
+      description:
+        'Hybrid Cortex search: embed the query (OpenAI), find nearest experiences (pgvector cosine) for this user, then attach matching project_facts rows. Requires OPENAI_API_KEY.',
+      inputSchema: {
+        search_query: z.string().min(1),
+        limit: z.number().int().min(1).max(50).optional().describe('Max experience rows (default 10)'),
+      },
+      annotations: {
+        title: 'Search cortex memory',
+        readOnlyHint: true,
+        openWorldHint: false,
+      },
+    },
+    async (args) => {
+      assertScope(scopes, 'read');
+      await withOrchestration(ctx, 'search_cortex_memory');
+      const qVec = await embedText(args.search_query);
+      const limit = args.limit ?? 10;
+      const { data: expRows, error: rpcErr } = await supabase.rpc('search_experiences_for_user', {
+        p_user_id: userId,
+        p_query: toVectorLiteral(qVec),
+        p_limit: limit,
+      });
+      if (rpcErr) {
+        throw new Error(`search_cortex_memory: ${rpcErr.message}`);
+      }
+      const experiences = (expRows ?? []) as Array<{
+        id: string;
+        project_name: string;
+        memory_text: string;
+        distance: number;
+      }>;
+      const names = [...new Set(experiences.map((e) => e.project_name))];
+      let facts: Array<{
+        project_name: string;
+        tech_stack: unknown;
+        strict_rules: string[];
+      }> = [];
+      if (names.length > 0) {
+        const { data: factRows, error: factErr } = await supabase
+          .from('project_facts')
+          .select('project_name, tech_stack, strict_rules')
+          .eq('user_id', userId)
+          .in('project_name', names);
+        if (factErr) {
+          throw new Error(`search_cortex_memory (project_facts): ${factErr.message}`);
+        }
+        facts = (factRows ?? []) as typeof facts;
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                query: args.search_query,
+                experiences,
+                project_facts: facts,
+                note:
+                  facts.length === 0 && names.length > 0
+                    ? 'No project_facts rows for these project_name values; use store_project_fact to add structured metadata.'
+                    : undefined,
+              },
+              null,
+              2
+            ),
           },
         ],
       };

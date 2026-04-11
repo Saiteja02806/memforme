@@ -180,7 +180,7 @@ Use this section as a **running checklist**. Update it when milestones land (see
 
 | Check | Result |
 |--------|--------|
-| **Postgres tables (live, read-only `inspect`)** | **Present:** `mcp_tokens`, `memory_entries`, `memory_versions`, `sessions`, `conflicts`, `mcp_tool_audit`, **`oauth_clients`**, **`oauth_authorization_codes`**, **`oauth_access_tokens`**. Schema + **`get_user_by_bearer_token`** applied on **memoryforme** via migration **`20260410170624_oauth_mcp_handler_schema.sql`** (CLI: `supabase db query --linked -f …`; **not** via Cursor Supabase MCP, which may still point at another project). For clients registered with `user_id` null, set MCP env **`OAUTH_AUTHORIZATION_USER_ID`** to a real **`auth.users`** UUID for `/oauth/authorize`. |
+| **Postgres tables (live, read-only `inspect`)** | **Present:** `mcp_tokens`, `memory_entries`, `memory_versions`, `sessions`, `conflicts`, `mcp_tool_audit`, **`oauth_clients`**, **`oauth_authorization_codes`**, **`oauth_access_tokens`**, **`project_facts`**, **`experiences`** (pgvector). OAuth DDL: **`20260410170624_oauth_mcp_handler_schema.sql`**. Cortex DDL: **`20260411172423_cortex_memory_layer.sql`** (`extensions.vector`, HNSW, `search_experiences_for_user`). For OAuth clients with `user_id` null, set MCP env **`OAUTH_AUTHORIZATION_USER_ID`**. |
 | **Row counts (live, estimated)** | **`mcp_tokens` ≈ 4**, **`memory_entries` ≈ 3**, **`sessions` ≈ 1**, **`mcp_tool_audit` ≈ 19** — environment is in use; counts change with traffic. |
 | **Postgres tables (repo intent)** | **Applied** — `001_initial_schema` + **`002_mcp_tool_audit`** + apply **`003_storage_rls_user_memory`** in SQL Editor for dashboard Storage RLS. |
 | **Storage bucket** | **`user-memory`** exists (private). Add **`storage.objects` RLS** for end-user dashboard access when you build the frontend; MCP uses **service role** uploads today. |
@@ -198,6 +198,7 @@ Use this section as a **running checklist**. Update it when milestones land (see
 | **`query_memory`** | **Live** — decrypt, `type` / substring `query`, **`limit` (1–100)**, **`max_chars_per_memory`** |
 | **`write_memory`** | **Live** — encrypt → insert; **`public.conflicts`** row on overlapping **type** with different text; Storage via **sync or BullMQ** (`REDIS_URL`) |
 | **`update_memory`** / **`delete_memory`** | **Live** — version history / soft delete; Storage sync path same as write |
+| **Cortex (structured + vector)** | **`store_project_fact`** / **`store_experience`** / **`search_cortex_memory`** in [`mcp-server/src/createMcpServer.ts`](./mcp-server/src/createMcpServer.ts) — OpenAI embeddings ([`mcp-server/src/embeddings/openaiEmbeddings.ts`](./mcp-server/src/embeddings/openaiEmbeddings.ts)), Postgres **`project_facts`** + **`experiences`**. **No Supabase Edge Functions** required for the MCP path (service role + Fastify). |
 | **Orchestrator** | **`public.sessions`** touched per tool (`touchCaptureSession`); **`captureBufferKey`** when `REDIS_URL` set |
 | **Audit** | **`mcp_tool_audit`** (migration `002`) — best-effort insert per tool call |
 | **`markdownSync.ts`** | Per-type `{type}.md` under **`{userId}/`** in **`user-memory`** |
@@ -205,7 +206,7 @@ Use this section as a **running checklist**. Update it when milestones land (see
 | **OAuth (direct on MCP host)** | `registerOAuthRoutes` in [`mcp-server/src/index.ts`](./mcp-server/src/index.ts). Discovery uses **`mcpPublicBaseUrl()`** / **`MCP_PUBLIC_URL`** (see [`mcp-server/src/oauth/discovery.ts`](./mcp-server/src/oauth/discovery.ts)); if unset, returns **503** `oauth_metadata_unconfigured`. The old **OAuth issuer bridge** file was **removed** from the repo. |
 | **Railway / Railpack** | Deploy from **repository root**: `npm run railway:deploy` (runs `railway up -d` with the full monorepo). Root **`npm run build`** must run **`npm ci --prefix mcp-server --include=dev`** before `tsc` so the image has TypeScript during the build step. |
 | **OAuth SQL in repo** | Canonical handler-aligned DDL: **`20260410170624_oauth_mcp_handler_schema.sql`**. Older numeric migrations (`005`/`006`/`20260410170254_*`) may differ; duplicate **`004_oauth_mcp.sql`** was **removed** from the repo to avoid version **`004`** clashes. |
-| Env required | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MEMORY_ENCRYPTION_KEY`, plus token path above |
+| Env required | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `MEMORY_ENCRYPTION_KEY`, **`OPENAI_API_KEY`** (for Cortex tools), optional **`OPENAI_EMBEDDING_MODEL`**, plus token path above |
 
 ### Phase 4 — Frontend ([`web/`](./web/))
 
@@ -235,7 +236,7 @@ Still open (when you need them):
 | [`docs/RAILWAY_MCP_CURSOR.md`](./docs/RAILWAY_MCP_CURSOR.md) | How to log in / set `RAILWAY_TOKEN`; not the same as your memory `mcp-server/` |
 | This file | Problem, storage mental model, gaps, MCP roadmap, **living implementation status**, advanced roadmap |
 | [`MCP_BUILD_PLAN.md`](./MCP_BUILD_PLAN.md) | Stable SDK pin, **`mcp-server/`** runbook, initial-stage checklist, full product phases, doc links |
-| [`mcp-server/`](./mcp-server/) | Fastify MCP, **four live tools** + Supabase + encryption + Markdown resync |
+| [`mcp-server/`](./mcp-server/) | Fastify MCP, **seven tools** (encrypted memory + Cortex) + Supabase + optional Markdown resync |
 | [`supabase/seed_mcp_token_example.sql`](./supabase/seed_mcp_token_example.sql) | Example insert for `mcp_tokens` (SHA-256 of secret) |
 | [`mcp-server/src/crypto/memoryEncryption.ts`](./mcp-server/src/crypto/memoryEncryption.ts) | AES-256-GCM for `content_enc` / `content_iv` |
 | [`mcp-server/src/storage/markdownSync.ts`](./mcp-server/src/storage/markdownSync.ts) | One **`.md` per memory type** (multi-file sync; not one merged file) |
@@ -244,6 +245,7 @@ Still open (when you need them):
 | [`supabase/migrations/001_initial_schema.sql`](./supabase/migrations/001_initial_schema.sql) | Postgres + RLS |
 | [`supabase/migrations/002_mcp_tool_audit.sql`](./supabase/migrations/002_mcp_tool_audit.sql) | Tool audit table |
 | [`supabase/migrations/003_storage_rls_user_memory.sql`](./supabase/migrations/003_storage_rls_user_memory.sql) | Storage policies for `user-memory` |
+| [`supabase/migrations/20260411172423_cortex_memory_layer.sql`](./supabase/migrations/20260411172423_cortex_memory_layer.sql) | **`project_facts`**, **`experiences`** + pgvector HNSW + **`search_experiences_for_user`** |
 | [`docs/DEPLOY_MILESTONE_A.md`](./docs/DEPLOY_MILESTONE_A.md) | Path B + Railway + ChatGPT checklist |
 | [`docs/REDIS_AND_WORKER.md`](./docs/REDIS_AND_WORKER.md) | Optional BullMQ worker |
 | [`web/`](./web/) | Phase 4 Next.js scaffold |
