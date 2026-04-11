@@ -29,6 +29,7 @@ export async function oauthRegisterHandler(
       user_id: null, // Public clients don't have a user owner
       client_id: clientId,
       client_secret_hash: clientSecretHash,
+      client_id_issued_at: Math.floor(Date.now() / 1000),
     })
     .select();
   
