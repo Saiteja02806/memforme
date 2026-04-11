@@ -92,10 +92,12 @@ export async function oauthTokenHandler(
   const { token, expires_at } = generateAccessToken();
   
   // Store access token
+  const tokenHash = createHash('sha256').update(token).digest('hex');
   const { error } = await supabase
     .from('oauth_access_tokens')
     .insert({
       access_token: token,
+      token_hash: tokenHash,
       client_id,
       user_id: authCode.user_id,
       scope: authCode.scope,
