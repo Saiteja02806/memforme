@@ -42,7 +42,7 @@ export async function oauthRegisterHandler(
   return reply.send({
     client_id: clientId,
     client_secret: clientSecret,
-    client_id_issued_at: new Date().toISOString(),
+    client_id_issued_at: Math.floor(Date.now() / 1000),
     registration_access_token: null, // Not implemented for public registration
   });
 }
