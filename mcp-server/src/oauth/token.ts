@@ -73,7 +73,7 @@ export async function oauthTokenHandler(
     .eq('client_id', client_id)
     .single();
   
-  if (!authCode) {
+  if (!authCode || !authCode.scope) {
     return reply.code(400).send({ 
       error: 'invalid_grant',
       error_description: 'Invalid authorization code'
