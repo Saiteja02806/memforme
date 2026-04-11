@@ -19,6 +19,7 @@ import { createCorsAllowlist, isRelaxLocalCorsEnabled } from './corsConfig.js';
 import { createMemoryMcpServer } from './createMcpServer.js';
 import { startMarkdownResyncWorker } from './queue/markdownWorker.js';
 import { registerOAuthRoutes } from './oauth/index.js';
+import { landingPageHandler, healthCheckHandler } from './web/landing.js';
 import { getSupabaseServiceClient } from './supabase/client.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -77,10 +78,11 @@ await app.register(cors, {
 await app.register(formbody);
 await registerOAuthRoutes(app);
 
-app.get('/health', async () => ({
-  ok: true,
-  service: 'cross-model-memory-mcp',
-}));
+// Landing page for brand subdomain
+app.get('/', landingPageHandler);
+
+// Enhanced health check endpoint
+app.get('/health', healthCheckHandler);
 
 app.get('/.well-known/oauth-protected-resource', async (_request, reply) => {
   const resource = mcpPublicBaseUrl();
