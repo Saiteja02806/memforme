@@ -49,6 +49,13 @@ export async function oauthTokenHandler(
   }
   
   // Validate client credentials
+  if (!client_secret) {
+    return reply.code(400).send({ 
+      error: 'invalid_request',
+      error_description: 'client_secret is required'
+    });
+  }
+  
   const client = await validateClientCredentials(client_id, client_secret);
   if (!client) {
     return reply.code(401).send({ 
