@@ -20,6 +20,9 @@ import { createMemoryMcpServer } from './createMcpServer.js';
 import { startMarkdownResyncWorker } from './queue/markdownWorker.js';
 import { registerOAuthRoutes } from './oauth/index.js';
 import { landingPageHandler, healthCheckHandler } from './web/landing.js';
+import { docsHandler } from './web/docs.js';
+import { developersHandler } from './web/developers.js';
+import { statusHandler } from './web/status.js';
 import { getSupabaseServiceClient } from './supabase/client.js';
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -83,6 +86,15 @@ app.get('/', landingPageHandler);
 
 // Enhanced health check endpoint
 app.get('/health', healthCheckHandler);
+
+// API documentation page
+app.get('/docs', docsHandler);
+
+// Developer portal
+app.get('/developers', developersHandler);
+
+// System status page
+app.get('/status', statusHandler);
 
 app.get('/.well-known/oauth-protected-resource', async (_request, reply) => {
   const resource = mcpPublicBaseUrl();
